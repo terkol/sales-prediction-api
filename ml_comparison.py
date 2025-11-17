@@ -15,7 +15,7 @@ from sklearn.linear_model import Ridge
 data_dir = os.path.dirname(os.path.dirname(__file__))+'\\data'
 np.set_printoptions(suppress=True)
 
-def load_training_data(file: str='training_data.csv'):
+def load_training_data(file: str='training_data.csv') -> pd.DataFrame:
     df = pd.read_csv(data_dir + f'\\{file}')
     df = df.set_index('times')
     df.index = pd.to_datetime(df.index)

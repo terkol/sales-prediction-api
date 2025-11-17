@@ -19,7 +19,7 @@ def load_sales(string: str='sales', loc: str="") -> pd.DataFrame:
     csv['times'] = finnish_time_to_utc(csv['times'])
     csv = csv[['times', ' Price ']]
 
-    # Split larger single sales into many smaller ones
+    # Split larger singular sales into many smaller ones
     df = pd.DataFrame()
     for i in range(2,11):
         mask = csv[" Price "].gt((i)*10-5)
@@ -75,13 +75,13 @@ def load_forecast(file: str='forecast_data.csv') -> pd.DataFrame:
     df.index = pd.to_datetime(df.index, utc=True)
     return df
 
-def load_data() -> pd.DataFrame:
-    df_sales = load_sales('Details', 'JA')
-    df_weather = load_weather(file='weather_obs_300_100974.csv')
-    df_trends = load_trends(file='google_trends.csv')
-    df_const = load_construction(file='toy_construction_data.csv')
-    df_open = load_open_hours(file='toy_open_hours_data.csv')
-    df_promos = load_promos(file='toy_promo_data.csv')
+def load_data(sales_string: str='sales', sales_loc: str='JA', weather_file: str='weather_data.csv', trends_file: str='google_trends.csv', const_file: str='construction_data.csv', open_hours_file: str='open_hours_data.csv', promo_file: str='promo_data.csv') -> pd.DataFrame:
+    df_sales = load_sales(sales_string, sales_loc)
+    df_weather = load_weather(file=weather_file)
+    df_trends = load_trends(file=trends_file)
+    df_const = load_construction(file=const_file)
+    df_open = load_open_hours(file=open_hours_file)
+    df_promos = load_promos(file=promo_file)
     df = df_sales.join([df_weather, df_trends, df_const, df_promos, df_open])
     df = df.dropna()
     return df
@@ -102,7 +102,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 if __name__ == "__main__":
-    df = load_data()
+    df = load_data(sales_string='Details', weather_file='weather_obs_300_100974.csv', const_file='toy_construction_data.csv', open_hours_file='toy_open_hours_data.csv', promo_file='toy_promo_data.csv')
     df = engineer_features(df)
     df.to_csv(data_dir + '\\training_data.csv')
     print(f"Saved training data into file '{data_dir}\\training_data.csv'")

@@ -9,7 +9,6 @@ from fmiopendata.wfs import download_stored_query
 from fastapi import Response
 
 data_dir = os.path.dirname(os.path.dirname(__file__))+'\\data'
-model = joblib.load(data_dir+"\\sales_model.joblib")
 
 def load_training_data(file: str='training_data.csv') -> pd.DataFrame:
     df = pd.read_csv(data_dir + f'\\{file}')
@@ -18,15 +17,15 @@ def load_training_data(file: str='training_data.csv') -> pd.DataFrame:
     df = df[['sales', 'temp_vals', 'precip_vals', 'trend']]
     return df
 
+model = joblib.load(data_dir+"\\sales_model.joblib")
 history_df = load_training_data()
 app = FastAPI()
 
-def to_wfs_time(t):
+def to_wfs_time(t: dt.datetime) -> dt.datetime:
     t_utc = t.astimezone(dt.timezone.utc)
     return t_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def fetch_forecast(hours_ahead=1, bbox="24,59.5,26,60.8"):
-    print('Fetching forecast...')
+def fetch_forecast(hours_ahead: int=1, bbox: str="23.95, 59.95, 24.05, 60.05") -> pd.DataFrame:
     now = dt.datetime.now(dt.timezone.utc)
     start_str = to_wfs_time(now)
     end_str = to_wfs_time(now + dt.timedelta(hours=hours_ahead))
@@ -37,7 +36,10 @@ def fetch_forecast(hours_ahead=1, bbox="24,59.5,26,60.8"):
     latest_run = max(model_data.data.keys())
     grid = model_data.data[latest_run]
     grid.parse()
-    lat0, lon0 = 60.25, 24.06
+
+    bbox = bbox.split(',')
+    bbox = [float(i) for i in bbox]
+    lat0, lon0 = (bbox[1]+bbox[3])/2, (bbox[0]+bbox[2])/2
 
     lats = grid.latitudes
     lons = grid.longitudes
@@ -62,13 +64,6 @@ def fetch_forecast(hours_ahead=1, bbox="24,59.5,26,60.8"):
         precs_mm.append(precip_val)
 
     df = pd.DataFrame({"times": times, "temp_vals": temps_C, "precip_vals": precs_mm}).set_index("times")
-    print('Forecast fetched.')
-    return df
-
-def load_forecast():
-    df = pd.read_csv(data_dir+'\\weather_forecast_120.csv')
-    df = df.set_index('times')
-    df.index = pd.to_datetime(df.index, utc=True)
     return df
 
 def fetch_normalized_trends(word: str="pizza", tf: str="2025-01-01 2025-12-31") -> pd.DataFrame:
@@ -77,9 +72,9 @@ def fetch_normalized_trends(word: str="pizza", tf: str="2025-01-01 2025-12-31") 
     df = pytrends.interest_over_time().reset_index()
     return df
 
-def build_features(now, history_df):
+def build_features(now: dt.datetime, history_df: pd.DataFrame):
     df = pd.DataFrame({"times": pd.date_range(now, now+dt.timedelta(days=4), freq='h')}).set_index('times')
-    forecast = load_forecast()
+    forecast = fetch_forecast(hours_ahead=120)
     df = df.join(forecast).dropna()
     df = pd.concat([history_df, df])
     try: 
@@ -117,11 +112,6 @@ def build_features(now, history_df):
     x = df.iloc[mask].drop(columns=["sales"]).dropna()
     return x
 
-def finnish_time_to_utc(s: pd.Series) -> pd.Series:    
-    s = s.dt.tz_localize("Europe/Helsinki", ambiguous="NaT", nonexistent="shift_forward")
-    s = s.dt.tz_convert('UTC')
-    return s
-
 @app.get("/")
 def root():
     return {"message": "API is running"}
@@ -136,6 +126,5 @@ def predict_sales_text():
     daily = df.groupby(df.index.date).sum()[:-1]
     lines = [f"{d.isoformat()}: {round(float(p), 2)}"for d, p in zip(daily.index, daily["preds"].values)]
     text = "\n".join(lines)
-
     return Response(content=text, media_type="text/plain")
 

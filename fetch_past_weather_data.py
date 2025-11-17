@@ -47,4 +47,4 @@ def save_weather_data(days: int=10, id: int=100974):
     print("Final time span:", df.index.min(), "->", df.index.max())
 
 if __name__ == "__main__":
-    save_weather_data(days=10)
+    save_weather_data(days=300)

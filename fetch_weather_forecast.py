@@ -5,11 +5,11 @@ import os
 
 from fmiopendata.wfs import download_stored_query
 
-def to_wfs_time(t):
+def to_wfs_time(t: dt.datetime) -> dt.datetime:
     t_utc = t.astimezone(dt.timezone.utc)
     return t_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def fetch_forecast(hours_ahead=1, bbox="23.95, 59.95, 24.05, 60.05"):
+def fetch_forecast(hours_ahead: int=1, bbox: str="23.95, 59.95, 24.05, 60.05") -> pd.DataFrame:
     now = dt.datetime.now(dt.timezone.utc)
     start_str = to_wfs_time(now)
     end_str = to_wfs_time(now + dt.timedelta(hours=hours_ahead))
