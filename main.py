@@ -17,8 +17,8 @@ def load_training_data(file: str='training_data.csv') -> pd.DataFrame:
     df = df[['sales', 'temp_vals', 'precip_vals', 'trend']]
     return df
 
-model = joblib.load(data_dir+"\\sales_model.joblib")
 history_df = load_training_data()
+model = joblib.load(data_dir+"\\sales_model.joblib")
 app = FastAPI()
 
 def to_wfs_time(t: dt.datetime) -> dt.datetime:
@@ -64,6 +64,7 @@ def fetch_forecast(hours_ahead: int=1, bbox: str="23.95, 59.95, 24.05, 60.05") -
         precs_mm.append(precip_val)
 
     df = pd.DataFrame({"times": times, "temp_vals": temps_C, "precip_vals": precs_mm}).set_index("times")
+    df.index = pd.to_datetime(df.index, utc=True)
     return df
 
 def fetch_normalized_trends(word: str="pizza", tf: str="2025-01-01 2025-12-31") -> pd.DataFrame:
@@ -78,11 +79,11 @@ def build_features(now: dt.datetime, history_df: pd.DataFrame):
     df = df.join(forecast).dropna()
     df = pd.concat([history_df, df])
     try: 
-        trends = fetch_normalized_trends(word='fizza')
-        trends['trend'] = trends['fizza']
+        trends = fetch_normalized_trends(word='pizza')
+        trends['trend'] = trends['pizza']
         trends['times'] = pd.to_datetime(trends['date'], utc=True)
-        trends = trends.drop(columns=['isPartial', 'fizza', 'date'])
-        trends = trends.set_index('times')
+        trends = trends.drop(columns=['isPartial', 'pizza', 'date'])
+        df['trend'] = trends['trend'].iloc[-1]
     except Exception as e:
         print("Could not fetch Google Trends, using fallback:", e)
         df['trend'] = history_df['trend'].iloc[-1]

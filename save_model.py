@@ -15,6 +15,9 @@ def save_linear_regression_model(df: pd.DataFrame):
     X = df.drop(columns='sales')
     y = df['sales']
     model = LinearRegression().fit(X, y)
+    coeffs = pd.DataFrame(index=X.columns)
+    coeffs['coeffs'] = model.coef_
+    coeffs.to_csv(data_dir + "\\sales_model_coeffs.csv")
     joblib.dump(model, data_dir + "\\sales_model.joblib")
     print(f"Saved model into file '{data_dir}\\sales_model.joblib'")
 

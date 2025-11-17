@@ -105,4 +105,5 @@ if __name__ == "__main__":
     df = load_data(sales_string='Details', weather_file='weather_obs_300_100974.csv', const_file='toy_construction_data.csv', open_hours_file='toy_open_hours_data.csv', promo_file='toy_promo_data.csv')
     df = engineer_features(df)
     df.to_csv(data_dir + '\\training_data.csv')
+    print(df)
     print(f"Saved training data into file '{data_dir}\\training_data.csv'")
